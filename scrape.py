@@ -1,12 +1,21 @@
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 import requests
 import datetime
+import time
+
+options = Options()
+options.headless = True
 
 def scrape_diario(url="http://diario.mx"):
-    diario=requests.get(url,headers={"User-Agent":"Mozilla/5.0 "}).text
+    driver = webdriver.Firefox(options=options)
+    driver.get(url)
+    diario=driver.page_source
     soup=BeautifulSoup(diario,"lxml")
+    driver.quit()
 
-    noticias=soup.find("div",class_="mas_visto")
+    noticias=soup.find("div",class_="rcm12 mas_leidas separacion_grande")
     encabe_diario=[]
     enlaces_diario=[]
 
@@ -25,23 +34,21 @@ def scrape_universal(url="http://eluniversal.com.mx/"):
     universal=requests.get(url,headers={"User-Agent":"Mozilla/5.0"}).text
     soup=BeautifulSoup(universal,"lxml")
 
-    noticias=soup.find("div",class_="contenido-principal")
-    articulos=noticias.find_all("article")
+    noticias=soup.find("div",class_="gl-Grid_9")
+    articulos=noticias.find_all("h2",class_="titulo")
 
     encabe_universal=[]
     enlaces_universal=[]
 
-    for i in range(4):
-        enca=articulos[i].find("h2")
-        encabe_universal.append(enca.text)
+    for i in articulos:
+        encabe_universal.append(i.text)
 
-    for i in range(4):
-        link_lookup=articulos[i].find("a")
-        links=link_lookup["href"]
-        enlaces_universal.append(links)
+    for i in articulos:
+        enlaces_universal.append(i.find("a")["href"])
     
     zip_universal=zip(encabe_universal,enlaces_universal)
     return zip_universal
+
 
 def scrape_economista(url="https://www.eleconomista.com.mx/"):
     economista=requests.get(url,headers={"User-Agent":"Mozilla/5.0"}).text
